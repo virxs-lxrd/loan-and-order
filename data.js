@@ -116,7 +116,7 @@ TEXT: {
   /* GAME 1 */
   g1: {
     introTitle: "SWIPE RIGHT",
-    introLine: "Your admit letter is in and the fee is ₹25 lakh. Eight lenders have pitched, one at a time. Some rates are fixed for the whole loan and some float with the market. Swipe right to shortlist a deal and left to pass. Then you pick one lender from your shortlist and sign with them.",
+    introLine: "Your admit letter is here, and you need a ₹25 lakh education loan. Eight lenders will make you an offer. Compare their interest rates and loan terms, swipe right to shortlist or left to skip, then choose the lender you want to borrow from.",
     deal: "DEAL {i} / {n}",
     shortlisted: "SHORTLISTED {n}",
     pass: "← PASS",
