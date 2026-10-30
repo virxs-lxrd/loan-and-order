@@ -380,7 +380,7 @@ EXIT: [
     opts: [["fresh", "Fresher"], ["lt2", "Under 2 years"], ["ge2", "2 years or more"]] },
   { k: "loanBank", label: "Bank the loan is from", q: "Which bank did you take your education loan from?", type: "text", ph: "Type the bank's name, or None" },
   { k: "problem", label: "Biggest problem in the loan process", q: "What was the biggest problem you faced in the loan process?", other: "other",
-    opts: [["paper", "Too much paperwork"], ["slow", "Slow sanction"], ["secure", "Needing collateral or a co-borrower"], ["rate", "High interest rate"], ["fees", "Hidden charges"], ["reach", "Hard to reach anyone for help"], ["none", "No problem at all"], ["notyet", "I have not applied yet"], ["other", "Other"]] },
+    opts: [["paper", "Too much paperwork"], ["online", "Too much online hassle"], ["slow", "Slow sanction"], ["secure", "Needing collateral or a co-borrower"], ["rate", "High interest rate"], ["fees", "Hidden charges"], ["reach", "Hard to reach anyone for help"], ["none", "No problem at all"], ["notyet", "I have not applied yet"], ["other", "Other"]] },
   { k: "channel", label: "Preferred way to set up a loan", q: "Which would you prefer for setting up a loan like this?", other: "other",
     opts: [["app", "Apply through an app / website"], ["branch", "Go to the loan office or branch"], ["home", "An agent visits my house"], ["campus", "A loan desk on campus"], ["call", "A video KYC, then e-sign"], ["other", "Other"]] }
 ]
