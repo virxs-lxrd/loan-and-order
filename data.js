@@ -221,6 +221,10 @@ TEXT: {
 
   /* THE LAST QUESTION + THE BILL */
   guess: {
+    explainKick: "LAST ONE",
+    explainTitle: "READY?",
+    explainLine: "One quick guess. No calculator. The question shows up when you tap START.",
+    explainBtn: "START",
     title: "ONE LAST QUESTION",
     intro: "Your loan is <b>{amount}</b>, paid out on day one, at <b>{rate}%</b> ({type}).",
     typeFixed: "fixed",

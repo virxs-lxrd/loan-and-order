@@ -240,7 +240,7 @@ var hud = function () {
   var s = ''; for (var i = 1; i <= 3; i++) s += '<i class="seg ' + (i < S.round ? 'done' : i === S.round ? 'now' : '') + '"></i>';
   return '<div class="top"><header class="hud"><b class="logo">' + T.logo + '</b><span class="segs" role="img" aria-label="' + fmt(T.roundAria, { n: Math.min(S.round, 3) }) + '">' + s + '</span></header><p class="sync" id="sync" aria-live="off"></p></div>';
 };
-var CANBACK = { i1: 1, swipe: 1, factor: 1, short: 1, i2: 1, deal: 1, dealsum: 1, i3: 1, seven: 1, banks: 1, rguess: 1, guess: 1, exit: 1 };
+var CANBACK = { i1: 1, swipe: 1, factor: 1, short: 1, i2: 1, deal: 1, dealsum: 1, i3: 1, seven: 1, banks: 1, rguess: 1, gintro: 1, guess: 1, exit: 1 };
 function show(html, bind, keep) {
   if (X.timer) { clearInterval(X.timer); clearTimeout(X.timer); X.timer = null; }
   app.className = '';
@@ -282,7 +282,8 @@ H.back = function () {
   else if (sc === 'seven') go('i3');
   else if (sc === 'banks') go('seven');
   else if (sc === 'rguess') { run.g3.done = false; go('banks'); }
-  else if (sc === 'guess') go('myrate');
+  else if (sc === 'gintro') go('myrate');
+  else if (sc === 'guess') go('gintro');
   else if (sc === 'exit') go('bill');
   rec('Back', 'from ' + sc, 'to ' + S.screen);
 };
@@ -589,7 +590,15 @@ V.myrate = function () {
       X.timer = setInterval(function () { var k = Math.min(1, (performance.now() - t0) / 1000); el.textContent = fx(x + (y - x) * (1 - Math.pow(1 - k, 3))) + '%'; if (k >= 1) { clearInterval(X.timer); X.timer = null; } }, 30);
     });
 };
-H.rateGo = function () { go('guess'); };
+H.rateGo = function () { go('gintro'); };
+
+/* ----- the explainer before the last question. The clock for the interest guess starts only when the player taps START ----- */
+V.gintro = function () {
+  S.round = 4; var G = T.guess; /* no loan numbers here on purpose: they appear only when the question opens */
+  show('<p class="kick">' + G.explainKick + '</p><h2 class="big">' + G.explainTitle + '</h2>' + host(T.registrar, G.explainLine)
+    + '<button class="btn go" data-act="gintroGo">' + G.explainBtn + '</button>');
+};
+H.gintroGo = function () { rec('Interest question opened', 'Player tapped ready'); go('guess'); };
 
 /* ----- the last question and the bill ----- */
 V.guess = function () {
