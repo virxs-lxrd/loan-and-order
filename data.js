@@ -27,7 +27,7 @@ window.GAME_DATA = {
 SETTINGS: {
   /* The long web address you copy from Apps Script after Deploy. It ends in /exec.
      Leave it empty to play in practice mode (nothing is saved). */
-  EXEC_URL: "https://script.google.com/macros/s/AKfycbwEPu_YaIvlsq20ZZSXXY2x57lQYH81OJAckD-NZanrIu6o8Rn1pHPg2ySLQfKDzQlamA/exec",
+  EXEC_URL: "",
 
   /* How many digits a player's number may have. Numbers only. */
   TOKEN_MIN: 3,
@@ -48,7 +48,8 @@ SETTINGS: {
   RETRY_MAX_MS: 30000,       /* longest wait between tries */
 
   /* Feel */
-  SWIPE_DISTANCE: 90         /* how far to drag a card before it counts as a swipe */
+  SWIPE_DISTANCE: 90,        /* how far to drag a card before it counts as a swipe */
+  EXIT_TEXT_MAX: 80          /* longest typed answer on the exit screen, in letters */
 },
 
 /* ------------------------------------------------------------------
@@ -116,7 +117,7 @@ TEXT: {
   /* GAME 1 */
   g1: {
     introTitle: "SWIPE RIGHT",
-    introLine: "Your admit letter is here, and you need a ₹25 lakh education loan. Eight lenders will make you an offer. Compare their interest rates and loan terms, swipe right to shortlist or left to skip, then choose the lender you want to borrow from.",
+    introLine: "Your admit letter is in and the fee is ₹25 lakh. Eight lenders have pitched, one at a time. Some rates are fixed for the whole loan and some float with the market. Swipe right to shortlist a deal and left to pass. Then you pick one lender from your shortlist and sign with them.",
     deal: "DEAL {i} / {n}",
     shortlisted: "SHORTLISTED {n}",
     pass: "← PASS",
@@ -260,7 +261,8 @@ TEXT: {
   exit: {
     kick: "LAST STOP",
     title: "EXIT INTERVIEW",
-    line: "Three quick questions on your way out.",
+    line: "Five quick questions on your way out.",
+    otherPh: "Please type your answer",
     submit: "SUBMIT"
   },
 
@@ -283,7 +285,8 @@ TEXT: {
     lblApplication: "Application",
     lblRepayment: "Repayment",
     years: "{n} years",
-    noChange: "No changes"
+    noChange: "No changes",
+    typed: "{answer}: {text}"
   }
 },
 
@@ -328,10 +331,11 @@ UPSELLS: {
 },
 
 /* ------------------------------------------------------------------
-   6. THE FIVE FACTORS (shown after the swiping)
+   6. THE SIX FACTORS (shown after the swiping)
    ------------------------------------------------------------------ */
 FACTORS: [
-  { k: "rate",  t: "Interest Rate + Fixed or Floating" },
+  { k: "rate",  t: "Interest rate" },
+  { k: "rtype", t: "Fixed or floating" },
   { k: "sec",   t: "Security" },
   { k: "time",  t: "Sanction time" },
   { k: "app",   t: "Application process" },
@@ -359,16 +363,21 @@ CRAZY: ["69", "420", "5RS", "0", "404", "666", "₹1", "1337", "3.14", "42", "10
 
 /* ------------------------------------------------------------------
    8. THE EXIT INTERVIEW QUESTIONS
-   k = the column it fills in the sheet (fund, work or channel). Do not rename k.
+   k = the column it fills in the sheet (fund, work, loanBank, problem or channel). Do not rename k.
    q = the question shown, label = short name used in the Swipe log,
    opts = [ ["id", "Answer shown and saved"], ... ]
+   type: "text" = a box to type in (no opts), ph = the grey hint inside the box.
+   other: "id" = when that answer is tapped, a box opens to type it. It is saved as "Other: what they typed".
    ------------------------------------------------------------------ */
 EXIT: [
-  { k: "fund",    label: "How the MBA is paid for", q: "How is your MBA actually being paid for?",
+  { k: "fund",    label: "How the MBA is paid for", q: "How is your MBA actually being paid for?", other: "other",
     opts: [["loan", "An education loan"], ["family", "Family pays"], ["savings", "My own savings"], ["sch", "Scholarship or employer"], ["other", "Other"]] },
   { k: "work",    label: "Work experience", q: "Work experience before the MBA?",
     opts: [["fresh", "Fresher"], ["lt2", "Under 2 years"], ["ge2", "2 years or more"]] },
-  { k: "channel", label: "Preferred way to set up a loan", q: "Which would you prefer for setting up a loan like this?",
+  { k: "loanBank", label: "Bank the loan is from", q: "Which bank did you take your education loan from?", type: "text", ph: "Type the bank's name, or None" },
+  { k: "problem", label: "Biggest problem in the loan process", q: "What was the biggest problem you faced in the loan process?", other: "other",
+    opts: [["paper", "Too much paperwork"], ["slow", "Slow sanction"], ["secure", "Needing collateral or a co-borrower"], ["rate", "High interest rate"], ["fees", "Hidden charges"], ["reach", "Hard to reach anyone for help"], ["none", "No problem at all"], ["notyet", "I have not applied yet"], ["other", "Other"]] },
+  { k: "channel", label: "Preferred way to set up a loan", q: "Which would you prefer for setting up a loan like this?", other: "other",
     opts: [["app", "Apply through an app / website"], ["branch", "Go to the loan office or branch"], ["home", "An agent visits my house"], ["campus", "A loan desk on campus"], ["call", "A video KYC, then e-sign"], ["other", "Other"]] }
 ]
 

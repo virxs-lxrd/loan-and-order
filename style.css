@@ -222,3 +222,8 @@ a.btn{display:block;text-align:center;text-decoration:none;color:var(--ink)}
 .err{margin:0;color:#fff;background:var(--orange-d);border-radius:12px;padding:10px 12px;font-weight:600;font-size:14px}
 .err[hidden]{display:none}
 .warn{margin:0;color:var(--lemon);font:500 12px var(--mono);letter-spacing:.04em;text-align:center}
+
+/* typed answers on the exit screen */
+.txt{display:block;width:100%;margin-top:10px;background:var(--bg2);border:2px solid var(--line);border-radius:14px;padding:12px 14px;color:var(--text);font:600 16px var(--body)}
+.txt::placeholder{color:rgba(251,241,218,.35);font-weight:500}
+.txt:focus{border-color:var(--lemon)}

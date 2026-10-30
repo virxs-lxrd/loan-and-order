@@ -107,12 +107,24 @@ function playersFields(S) {
       if (r.g4.guess != null) f.offBy = Math.round(Math.abs(r.g4.guess * 100000 - f.actual));
     }
   }
-  EXIT.forEach(function (q) { var o = r.p[q.k]; if (o) { var hit = findBy(q.opts.map(function (x) { return { id: x[0], t: x[1] }; }), 'id', o); f[q.k] = hit ? hit.t : o; } });
+  /* an exit answer that was given and then cleared is sent as empty, so the sheet is corrected too */
+  EXIT.forEach(function (q) { if (q.k in r.p) f[q.k] = exitAnswer(q, r.p); });
   return f;
 }
 
+/* The words written to the sheet for one exit question.
+   A chip answer is the chip's words. "Other" with typed words becomes "Other: the words". A typed question is just the words. */
+function exitAnswer(q, p) {
+  var v = p[q.k]; if (!v) return '';
+  var max = ST.EXIT_TEXT_MAX || 80;
+  if (q.type === 'text') return String(v).trim().slice(0, max);
+  var hit = findBy(q.opts.map(function (x) { return { id: x[0], t: x[1] }; }), 'id', v), words = hit ? hit.t : v;
+  if (q.other && v === q.other) { var x = String(p[q.k + 'Text'] || '').trim().slice(0, max); if (x) return fmt(T.sheet.typed, { answer: words, text: x }); }
+  return words;
+}
+
 var LOGIC = { fmt: fmt, plain: plain, fx: fx, inr: inr, lakhS: lakhS, round2: round2, accrued: accrued, cardLabel: cardLabel, validToken: validToken,
-              parseRate: parseRate, parseGuess: parseGuess, freshRun: freshRun, freshState: freshState, terms: terms, changesText: changesText, playersFields: playersFields };
+              parseRate: parseRate, parseGuess: parseGuess, freshRun: freshRun, freshState: freshState, terms: terms, changesText: changesText, playersFields: playersFields, exitAnswer: exitAnswer };
 root.LOGIC = LOGIC;
 if (typeof document === 'undefined') return; /* stop here when tests load this file in Node */
 
@@ -144,7 +156,7 @@ function paintPill() {
   var P = T.sync, parts = [], bad = false;
   if (S.token) parts.push(fmt(P.token, { token: S.token }));
   if (!ST.EXEC_URL) parts.push(P.practice);
-  else if (Q.blocked.length) { parts.push(P.blocked); bad = true; }
+  else if (S.token && Q.blocked.some(function (b) { return b.item && b.item.token === S.token; })) { parts.push(P.blocked); bad = true; } /* only this player's refused answers; an old, finished number must not flag a new game */
   else if (Q.items.length) { parts.push(Q.fail > 0 ? P.offline : P.saving); bad = Q.fail >= 3; }
   else if (Q.everOk) parts.push(P.saved);
   el.innerHTML = parts.join(' · '); el.classList.toggle('bad', bad);
@@ -635,16 +647,42 @@ H.billGo = function () { go('exit'); };
 
 /* ----- exit interview, thanks ----- */
 V.exit = function (keep) {
-  var p = S.run.p, E = T.exit;
-  var q = function (Q_) { return '<p class="q">' + esc(Q_.q) + '</p><div class="chips">' + Q_.opts.map(function (o) { return '<button class="chip ' + (p[Q_.k] === o[0] ? 'on' : '') + '" data-act="pf" data-q="' + Q_.k + '" data-v="' + o[0] + '" aria-pressed="' + (p[Q_.k] === o[0]) + '">' + esc(o[1]) + '</button>'; }).join('') + '</div>'; };
-  show('<p class="kick">' + E.kick + '</p><h2 class="big">' + E.title + '</h2>' + host(T.registrar, E.line) + '<section class="tips">' + EXIT.map(q).join('') + '</section><button class="btn go" data-act="submit">' + E.submit + '</button>', null, keep);
+  var p = S.run.p, E = T.exit, max = ST.EXIT_TEXT_MAX || 80;
+  var box = function (key, ph, label) { return '<input class="txt" type="text" data-text="' + key + '" maxlength="' + max + '" autocomplete="off" autocapitalize="sentences" placeholder="' + esc(ph || '') + '" value="' + esc(p[key] || '') + '" aria-label="' + esc(label) + '">'; };
+  var q = function (Q_) {
+    var h = '<p class="q">' + esc(Q_.q) + '</p>';
+    X.logged = X.logged || {};
+    if (Q_.type === 'text') { if (X.logged[Q_.k] === undefined) X.logged[Q_.k] = p[Q_.k] || ''; return h + box(Q_.k, Q_.ph, Q_.q); }
+    h += '<div class="chips">' + Q_.opts.map(function (o) { return '<button class="chip ' + (p[Q_.k] === o[0] ? 'on' : '') + '" data-act="pf" data-q="' + Q_.k + '" data-v="' + o[0] + '" aria-pressed="' + (p[Q_.k] === o[0]) + '">' + esc(o[1]) + '</button>'; }).join('') + '</div>';
+    if (Q_.other && p[Q_.k] === Q_.other) { var tk = Q_.k + 'Text'; if (X.logged[tk] === undefined) X.logged[tk] = p[tk] || ''; h += box(tk, E.otherPh, Q_.q + ' ' + E.otherPh); }
+    return h;
+  };
+  show('<p class="kick">' + E.kick + '</p><h2 class="big">' + E.title + '</h2>' + host(T.registrar, E.line) + '<section class="tips">' + EXIT.map(q).join('') + '</section><button class="btn go" data-act="submit">' + E.submit + '</button>', function () {
+    app.querySelectorAll('input[data-text]').forEach(function (el) {
+      el.addEventListener('input', function () { p[el.dataset.text] = el.value; persist(); }); /* kept in the phone as they type; nothing is sent until they finish */
+      el.addEventListener('change', function () { commitText(el.dataset.text, el.value); });
+      el.addEventListener('keydown', function (e) { if (e.key === 'Enter') el.blur(); });
+    });
+  }, keep);
 };
+/* one typed answer is finished: log it and send the new snapshot */
+function exitQuestionFor(key) { return findBy(EXIT, 'k', key) || findBy(EXIT, 'k', key.replace(/Text$/, '')); }
+function commitText(key, raw) {
+  var p = S.run.p, val = String(raw == null ? '' : raw).trim(), Q_ = exitQuestionFor(key); if (!Q_) return;
+  X.logged = X.logged || {}; if (X.logged[key] === val) return;
+  X.logged[key] = val; p[key] = val;
+  rec('Exit: ' + Q_.label + (key === Q_.k ? '' : ' (typed)'), val === '' ? T.sheet.cleared : val);
+}
 H.pf = function (d) {
   var p = S.run.p, Q_ = findBy(EXIT, 'k', d.q), o = findBy(Q_.opts.map(function (x) { return { id: x[0], t: x[1] }; }), 'id', d.v);
-  var clear = p[d.q] === d.v; if (clear) delete p[d.q]; else p[d.q] = d.v;
+  var clear = p[d.q] === d.v; if (clear) p[d.q] = ''; else p[d.q] = d.v;
   rec('Exit: ' + Q_.label, clear ? T.sheet.cleared : o.t); V.exit(true);
+  if (!clear && Q_.other === d.v) { var el = app.querySelector('input[data-text="' + Q_.k + 'Text"]'); if (el) { try { el.focus(); } catch (e) {} } } /* "Other": the box opens ready to type in */
 };
-H.submit = function () { S.run.sub = 1; rec('Submit', 'Exit interview submitted'); go('thanks'); };
+H.submit = function () {
+  app.querySelectorAll('input[data-text]').forEach(function (el) { commitText(el.dataset.text, el.value); }); /* a box still being typed in is saved first */
+  S.run.sub = 1; rec('Submit', 'Exit interview submitted'); go('thanks');
+};
 V.thanks = function () {
   S.round = 4; var K = T.thanks;
   show('<div class="sevenbox thx">' + confetti() + '<div class="thxin"><div class="cheers" aria-hidden="true"><span>🍹</span><span class="mid">🥂</span><span>🍻</span></div><p class="kick c">' + K.kick + '</p><h2 class="big c">' + K.title + '</h2></div></div><button class="btn go" data-act="newGame">' + K.reset + '</button>');
