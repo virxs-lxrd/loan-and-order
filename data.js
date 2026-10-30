@@ -27,7 +27,7 @@ window.GAME_DATA = {
 SETTINGS: {
   /* The long web address you copy from Apps Script after Deploy. It ends in /exec.
      Leave it empty to play in practice mode (nothing is saved). */
-  EXEC_URL: "",
+  EXEC_URL: "https://script.google.com/macros/s/AKfycbwEPu_YaIvlsq20ZZSXXY2x57lQYH81OJAckD-NZanrIu6o8Rn1pHPg2ySLQfKDzQlamA/exec",
 
   /* How many digits a player's number may have. Numbers only. */
   TOKEN_MIN: 3,
