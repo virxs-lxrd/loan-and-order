@@ -87,7 +87,8 @@ function playersFields(S) {
   var g1 = r.g1;
   if (g1.short.length) f.shortlist = g1.short.map(function (i) { return cardLabel(CARDS[i]); }).join('; ');
   else f.shortlist = g1.pick != null ? T.sheet.shortlistNone : '';
-  var fac = findBy(FACTORS, 'k', g1.factor); f.factor = fac ? fac.t : '';
+  /* the factors can be several; they are written in the order the player tapped them */
+  f.factor = asList(g1.factor).map(function (k) { var h = findBy(FACTORS, 'k', k); return h ? h.t : ''; }).filter(Boolean).join('; ');
   var t = terms(r);
   if (t) {
     var c = t.card;
@@ -115,16 +116,23 @@ function playersFields(S) {
 /* The words written to the sheet for one exit question.
    A chip answer is the chip's words. "Other" with typed words becomes "Other: the words". A typed question is just the words. */
 function exitAnswer(q, p) {
-  var v = p[q.k]; if (!v) return '';
   var max = ST.EXIT_TEXT_MAX || 80;
-  if (q.type === 'text') return String(v).trim().slice(0, max);
-  var hit = findBy(q.opts.map(function (x) { return { id: x[0], t: x[1] }; }), 'id', v), words = hit ? hit.t : v;
-  if (q.other && v === q.other) { var x = String(p[q.k + 'Text'] || '').trim().slice(0, max); if (x) return fmt(T.sheet.typed, { answer: words, text: x }); }
-  return words;
+  if (q.type === 'text') return p[q.k] ? String(p[q.k]).trim().slice(0, max) : '';
+  var ids = asList(p[q.k]); if (!ids.length) return '';
+  var opts = q.opts.map(function (x) { return { id: x[0], t: x[1] }; });
+  return ids.map(function (id) {
+    var hit = findBy(opts, 'id', id), words = hit ? hit.t : id;
+    if (q.other && id === q.other) { var x = String(p[q.k + 'Text'] || '').trim().slice(0, max); if (x) return fmt(T.sheet.typed, { answer: words, text: x }); }
+    return words;
+  }).join('; ');
 }
+/* a saved answer can be one id (older games) or a list of ids; both are read as a list */
+function asList(v) { return Array.isArray(v) ? v.slice() : (v ? [v] : []); }
+/* add or remove one id; true means it was added */
+function toggleIn(list, id) { var i = list.indexOf(id); if (i < 0) { list.push(id); return true; } list.splice(i, 1); return false; }
 
 var LOGIC = { fmt: fmt, plain: plain, fx: fx, inr: inr, lakhS: lakhS, round2: round2, accrued: accrued, cardLabel: cardLabel, validToken: validToken,
-              parseRate: parseRate, parseGuess: parseGuess, freshRun: freshRun, freshState: freshState, terms: terms, changesText: changesText, playersFields: playersFields, exitAnswer: exitAnswer };
+              parseRate: parseRate, parseGuess: parseGuess, freshRun: freshRun, freshState: freshState, terms: terms, changesText: changesText, playersFields: playersFields, exitAnswer: exitAnswer, asList: asList };
 root.LOGIC = LOGIC;
 if (typeof document === 'undefined') return; /* stop here when tests load this file in Node */
 
@@ -384,18 +392,18 @@ H.swipe = function (d) { decide(+d.v); };
 document.addEventListener('keydown', function (e) { if (S.screen !== 'swipe') return; if (e.key === 'ArrowRight') decide(1); if (e.key === 'ArrowLeft') decide(0); });
 
 V.factor = function () {
-  var f = S.run.g1.factor, G = T.g1;
+  var f = asList(S.run.g1.factor), G = T.g1;
   show('<p class="kick">' + G.factorKick + '</p><h2 class="mid">' + G.factorTitle + '</h2><p class="q">' + G.factorQ + '</p>'
-    + '<div class="fopts">' + FACTORS.map(function (o) { return '<button class="fopt ' + (f === o.k ? 'on' : '') + '" data-act="factor" data-v="' + o.k + '" aria-pressed="' + (f === o.k) + '">' + esc(o.t) + '</button>'; }).join('') + '</div>'
-    + '<div class="sticky"><button class="btn go" id="fgo" data-act="factorGo" ' + (f ? '' : 'disabled') + '>' + G.factorBtn + '</button></div>');
+    + '<div class="fopts">' + FACTORS.map(function (o) { var on = f.indexOf(o.k) >= 0; return '<button class="fopt ' + (on ? 'on' : '') + '" data-act="factor" data-v="' + o.k + '" aria-pressed="' + on + '">' + esc(o.t) + '</button>'; }).join('') + '</div>'
+    + '<div class="sticky"><button class="btn go" id="fgo" data-act="factorGo" ' + (f.length ? '' : 'disabled') + '>' + G.factorBtn + '</button></div>');
 };
 H.factor = function (d) {
-  S.run.g1.factor = d.v;
-  app.querySelectorAll('.fopt').forEach(function (b) { var on = b.dataset.v === d.v; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
-  document.getElementById('fgo').disabled = false;
-  rec('Factor that mattered most', findBy(FACTORS, 'k', d.v).t);
+  var g1 = S.run.g1, list = asList(g1.factor), added = toggleIn(list, d.v); g1.factor = list;
+  app.querySelectorAll('.fopt').forEach(function (b) { var on = list.indexOf(b.dataset.v) >= 0; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+  document.getElementById('fgo').disabled = !list.length;
+  rec('Factor that mattered most', findBy(FACTORS, 'k', d.v).t, added ? 'added' : 'removed');
 };
-H.factorGo = function () { if (!S.run.g1.factor) return; go('short'); };
+H.factorGo = function () { if (!asList(S.run.g1.factor).length) return; go('short'); };
 V.short = function () {
   var g1 = S.run.g1, sh = g1.short, none = !sh.length, idx = none ? g1.order : sh, G = T.g1;
   if (sh.length === 1) S.sel = sh[0];
@@ -662,8 +670,10 @@ V.exit = function (keep) {
     var h = '<p class="q">' + esc(Q_.q) + '</p>';
     X.logged = X.logged || {};
     if (Q_.type === 'text') { if (X.logged[Q_.k] === undefined) X.logged[Q_.k] = p[Q_.k] || ''; return h + box(Q_.k, Q_.ph, Q_.q); }
-    h += '<div class="chips">' + Q_.opts.map(function (o) { return '<button class="chip ' + (p[Q_.k] === o[0] ? 'on' : '') + '" data-act="pf" data-q="' + Q_.k + '" data-v="' + o[0] + '" aria-pressed="' + (p[Q_.k] === o[0]) + '">' + esc(o[1]) + '</button>'; }).join('') + '</div>';
-    if (Q_.other && p[Q_.k] === Q_.other) { var tk = Q_.k + 'Text'; if (X.logged[tk] === undefined) X.logged[tk] = p[tk] || ''; h += box(tk, E.otherPh, Q_.q + ' ' + E.otherPh); }
+    var have = asList(p[Q_.k]);
+    if (Q_.multi) h += '<p class="pick">' + E.multiHint + '</p>';
+    h += '<div class="chips">' + Q_.opts.map(function (o) { var on = have.indexOf(o[0]) >= 0; return '<button class="chip ' + (on ? 'on' : '') + '" data-act="pf" data-q="' + Q_.k + '" data-v="' + o[0] + '" aria-pressed="' + on + '">' + esc(o[1]) + '</button>'; }).join('') + '</div>';
+    if (Q_.other && have.indexOf(Q_.other) >= 0) { var tk = Q_.k + 'Text'; if (X.logged[tk] === undefined) X.logged[tk] = p[tk] || ''; h += box(tk, E.otherPh, Q_.q + ' ' + E.otherPh); }
     return h;
   };
   show('<p class="kick">' + E.kick + '</p><h2 class="big">' + E.title + '</h2>' + host(T.registrar, E.line) + '<section class="tips">' + EXIT.map(q).join('') + '</section><button class="btn go" data-act="submit">' + E.submit + '</button>', function () {
@@ -683,10 +693,11 @@ function commitText(key, raw) {
   rec('Exit: ' + Q_.label + (key === Q_.k ? '' : ' (typed)'), val === '' ? T.sheet.cleared : val);
 }
 H.pf = function (d) {
-  var p = S.run.p, Q_ = findBy(EXIT, 'k', d.q), o = findBy(Q_.opts.map(function (x) { return { id: x[0], t: x[1] }; }), 'id', d.v);
-  var clear = p[d.q] === d.v; if (clear) p[d.q] = ''; else p[d.q] = d.v;
-  rec('Exit: ' + Q_.label, clear ? T.sheet.cleared : o.t); V.exit(true);
-  if (!clear && Q_.other === d.v) { var el = app.querySelector('input[data-text="' + Q_.k + 'Text"]'); if (el) { try { el.focus(); } catch (e) {} } } /* "Other": the box opens ready to type in */
+  var p = S.run.p, Q_ = findBy(EXIT, 'k', d.q), o = findBy(Q_.opts.map(function (x) { return { id: x[0], t: x[1] }; }), 'id', d.v), added;
+  if (Q_.multi) { var list = asList(p[d.q]); added = toggleIn(list, d.v); p[d.q] = list; rec('Exit: ' + Q_.label, o.t, added ? 'added' : 'removed'); }
+  else { added = p[d.q] !== d.v; p[d.q] = added ? d.v : ''; rec('Exit: ' + Q_.label, added ? o.t : T.sheet.cleared); }
+  V.exit(true);
+  if (added && Q_.other === d.v) { var el = app.querySelector('input[data-text="' + Q_.k + 'Text"]'); if (el) { try { el.focus(); } catch (e) {} } } /* "Other": the box opens ready to type in */
 };
 H.submit = function () {
   app.querySelectorAll('input[data-text]').forEach(function (el) { commitText(el.dataset.text, el.value); }); /* a box still being typed in is saved first */

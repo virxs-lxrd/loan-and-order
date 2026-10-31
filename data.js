@@ -135,7 +135,7 @@ TEXT: {
     repayValue: "{yrs} years, starting 6 months after the course",
     factorKick: "BEFORE YOUR SHORTLIST",
     factorTitle: "WHAT DECIDED IT?",
-    factorQ: "Which factor affected your decision the most?",
+    factorQ: "Which factors affected your decision? Pick all that apply.",
     factorBtn: "SHOW MY SHORTLIST",
     shortTitle: "YOUR SHORTLIST",
     shortTitleNone: "NOTHING MADE THE CUT",
@@ -267,6 +267,7 @@ TEXT: {
     title: "EXIT INTERVIEW",
     line: "Five quick questions on your way out.",
     otherPh: "Please type your answer",
+    multiHint: "Pick all that apply.",
     submit: "SUBMIT"
   },
 
@@ -370,18 +371,19 @@ CRAZY: ["69", "420", "5RS", "0", "404", "666", "₹1", "1337", "3.14", "42", "10
    k = the column it fills in the sheet (fund, work, loanBank, problem or channel). Do not rename k.
    q = the question shown, label = short name used in the Swipe log,
    opts = [ ["id", "Answer shown and saved"], ... ]
+   multi: true = the player can tap more than one answer. They are saved in the order tapped, separated by "; ".
    type: "text" = a box to type in (no opts), ph = the grey hint inside the box.
    other: "id" = when that answer is tapped, a box opens to type it. It is saved as "Other: what they typed".
    ------------------------------------------------------------------ */
 EXIT: [
-  { k: "fund",    label: "How the MBA is paid for", q: "How is your MBA actually being paid for?", other: "other",
+  { k: "fund",    label: "How the MBA is paid for", q: "How is your MBA actually being paid for?", multi: true, other: "other",
     opts: [["loan", "An education loan"], ["family", "Family pays"], ["savings", "My own savings"], ["sch", "Scholarship or employer"], ["other", "Other"]] },
   { k: "work",    label: "Work experience", q: "Work experience before the MBA?",
     opts: [["fresh", "Fresher"], ["lt2", "Under 2 years"], ["ge2", "2 years or more"]] },
   { k: "loanBank", label: "Bank the loan is from", q: "Which bank did you take your education loan from?", type: "text", ph: "Type the bank's name, or None" },
-  { k: "problem", label: "Biggest problem in the loan process", q: "What was the biggest problem you faced in the loan process?", other: "other",
+  { k: "problem", label: "Biggest problem in the loan process", q: "What was the biggest problem you faced in the loan process?", multi: true, other: "other",
     opts: [["paper", "Too much paperwork"], ["online", "Too much online hassle"], ["slow", "Slow sanction"], ["secure", "Needing collateral or a co-borrower"], ["rate", "High interest rate"], ["fees", "Hidden charges"], ["reach", "Hard to reach anyone for help"], ["none", "No problem at all"], ["notyet", "I have not applied yet"], ["other", "Other"]] },
-  { k: "channel", label: "Preferred way to set up a loan", q: "Which would you prefer for setting up a loan like this?", other: "other",
+  { k: "channel", label: "Preferred way to set up a loan", q: "Which would you prefer for setting up a loan like this?", multi: true, other: "other",
     opts: [["app", "Apply through an app / website"], ["branch", "Go to the loan office or branch"], ["home", "An agent visits my house"], ["campus", "A loan desk on campus"], ["call", "A video KYC, then e-sign"], ["other", "Other"]] }
 ]
 

@@ -227,3 +227,5 @@ a.btn{display:block;text-align:center;text-decoration:none;color:var(--ink)}
 .txt{display:block;width:100%;margin-top:10px;background:var(--bg2);border:2px solid var(--line);border-radius:14px;padding:12px 14px;color:var(--text);font:600 16px var(--body)}
 .txt::placeholder{color:rgba(251,241,218,.35);font-weight:500}
 .txt:focus{border-color:var(--lemon)}
+
+.pick{margin:-4px 0 8px;font:500 12px var(--mono);letter-spacing:.06em;color:var(--muted)}
